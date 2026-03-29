@@ -43,7 +43,6 @@ fun LocationScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Launcher для запроса разрешений
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -55,7 +54,6 @@ fun LocationScreen(
         }
     }
 
-    // Функция для запроса разрешений и получения местоположения
     val requestLocationWithPermission: () -> Unit = {
         if (viewModel.hasLocationPermission()) {
             viewModel.fetchLocation()
@@ -76,7 +74,6 @@ fun LocationScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Заголовок
         Text(
             text = "📍 Мой адрес",
             fontSize = 28.sp,
@@ -86,7 +83,6 @@ fun LocationScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Контент в зависимости от состояния
         when (val currentState = state) {
             is LocationState.Idle -> {
                 IdleContent()
@@ -111,10 +107,8 @@ fun LocationScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Кнопка
         when (state) {
             is LocationState.Loading -> {
-                // Кнопка отключена во время загрузки
             }
             else -> {
                 Button(
@@ -184,7 +178,6 @@ private fun SuccessContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Адрес крупным текстом
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -213,7 +206,6 @@ private fun SuccessContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Координаты
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(

@@ -2,12 +2,10 @@ package com.example.module_4_prac_10
 
 import android.Manifest
 import android.app.Application
-import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
-import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,9 +25,6 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/**
- * Состояния UI для экрана определения местоположения
- */
 sealed class LocationState {
     data object Idle : LocationState()
     data object Loading : LocationState()
@@ -44,20 +39,12 @@ sealed class LocationState {
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    /**
-     * FusedLocationProviderClient - рекомендуемый способ получения местоположения в Android.
-     * Он объединяет данные из GPS, Wi-Fi и сотовых сетей для получения
-     * наиболее точного местоположения с минимальным потреблением батареи.
-     */
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(application)
 
     private val _state = MutableStateFlow<LocationState>(LocationState.Idle)
     val state: StateFlow<LocationState> = _state.asStateFlow()
 
-    /**
-     * Проверяет наличие разрешений на доступ к местоположению
-     */
     fun hasLocationPermission(): Boolean {
         val context = getApplication<Application>()
         return ContextCompat.checkSelfPermission(
@@ -70,9 +57,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ) == PackageManager.PERMISSION_GRANTED
     }
 
-    /**
-     * Запрашивает текущее местоположение и выполняет обратное геокодирование
-     */
     fun fetchLocation() {
         if (!hasLocationPermission()) {
             _state.value = LocationState.PermissionRequired
@@ -102,22 +86,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Получает текущее местоположение с помощью FusedLocationProviderClient.
-     * Использует getCurrentLocation с высоким приоритетом точности.
-     *
-     * @return Location или null, если местоположение недоступно
-     */
     @Suppress("MissingPermission")
     private suspend fun getCurrentLocation(): Location? {
         return suspendCancellableCoroutine { continuation ->
             val cancellationTokenSource = CancellationTokenSource()
 
-            /**
-             * getCurrentLocation - получает текущее местоположение устройства.
-             * Priority.PRIORITY_HIGH_ACCURACY - использует GPS для максимальной точности.
-             * Альтернативы: PRIORITY_BALANCED_POWER_ACCURACY, PRIORITY_LOW_POWER
-             */
             fusedLocationClient.getCurrentLocation(
                 Priority.PRIORITY_HIGH_ACCURACY,
                 cancellationTokenSource.token
@@ -133,27 +106,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Выполняет обратное геокодирование - преобразует координаты в читаемый адрес.
-     * Использует Android Geocoder API.
-     *
-     * @param location Объект Location с координатами
-     * @return Строка с адресом
-     */
     private suspend fun getAddressFromLocation(location: Location): String {
         return withContext(Dispatchers.IO) {
             val context = getApplication<Application>()
             val geocoder = Geocoder(context, Locale.getDefault())
 
             try {
-                /**
-                 * Geocoder.getFromLocation - выполняет обратное геокодирование.
-                 * Первые два параметра - широта и долгота.
-                 * Третий параметр - максимальное количество результатов.
-                 *
-                 * В Android 13+ доступен асинхронный API с callback,
-                 * но для совместимости используем блокирующий вызов в IO-потоке.
-                 */
                 @Suppress("DEPRECATION")
                 val addresses: List<Address>? = geocoder.getFromLocation(
                     location.latitude,
@@ -175,13 +133,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Формирует читаемую строку адреса из объекта Address
-     */
     private fun buildAddressString(address: Address): String {
         val parts = mutableListOf<String>()
 
-        // Улица и номер дома
         address.thoroughfare?.let { street ->
             val streetWithNumber = if (address.subThoroughfare != null) {
                 "$street, ${address.subThoroughfare}"
@@ -191,19 +145,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             parts.add(streetWithNumber)
         }
 
-        // Район/микрорайон
         address.subLocality?.let { parts.add(it) }
 
-        // Город
         address.locality?.let { parts.add(it) }
 
-        // Область/регион
         address.adminArea?.let { parts.add(it) }
 
-        // Страна
         address.countryName?.let { parts.add(it) }
 
-        // Почтовый индекс
         address.postalCode?.let { parts.add("($it)") }
 
         return if (parts.isNotEmpty()) {
